@@ -62,7 +62,7 @@ Start-Job {
   Add-Type -AssemblyName System.Windows.Forms
   for ($i = 0; $i -lt 100; $i++) {
     [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point((Get-Random -Minimum 0 -Maximum 1920), (Get-Random -Minimum 0 -Maximum 1080))
-    Start-Sleep -Seconds 60
+    Start-Sleep -Seconds 240
   }
 }
 
