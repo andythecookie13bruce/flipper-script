@@ -19,27 +19,31 @@ $hWnd = [Win32]::GetForegroundWindow()
 Add-Type -AssemblyName PresentationFramework
 [System.Windows.MessageBox]::Show("You shouldn''t have plugged that in... I''m watching.","System Alert")
 
-# BSOD HTML with embedded music
+# BSOD HTML with JavaScript audio autoplay hack
 $html = @"
 <html>
-<body style='background: url(https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/creepy.jpg) no-repeat center center fixed; background-size: cover; color:#00ff00; font-family:Consolas; font-size:24px;'>
-<center><br><br><br><br>
+<body style='background: url(https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/creepy.jpg) no-repeat center center fixed; background-size: cover; color:#00ff00; font-family:Consolas; font-size:24px; margin:0; overflow:hidden;'>
+<center style='margin-top: 10%;'>
 <h1>😵</h1>
 <h2>Your PC is dead.</h2>
 <p>It saw something it shouldn’t have.</p>
 <p>There is no reboot.</p>
 <p>We warned you.</p>
-<audio autoplay loop>
-  <source src="https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/whispers.mp3" type="audio/mpeg">
-</audio>
 </center>
 <script>
-let glitch = () => {
-  document.body.style.opacity = Math.random();
-  document.body.style.transform = "scale(" + (1 + Math.random()/10) + ")";
-  setTimeout(glitch, 100);
-};
-glitch();
+  let audio = new Audio("https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/whispers.mp3");
+  audio.loop = true;
+  audio.volume = 1.0;
+  setTimeout(() => {{
+    audio.play().catch(e => console.log("Autoplay blocked"));
+  }}, 500); // Give browser a sec before attempting playback
+
+  let glitch = () => {{
+    document.body.style.opacity = Math.random();
+    document.body.style.transform = "scale(" + (1 + Math.random()/10) + ")";
+    setTimeout(glitch, 100);
+  }};
+  glitch();
 </script>
 </body>
 </html>
