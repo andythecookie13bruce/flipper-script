@@ -64,6 +64,6 @@ Start-Job {
 }
 
 # ⏳ Wait 4 minutes before shutdown
-Start-Sleep -Seconds 240
+Start-Sleep -Seconds 180
 [Win32]::BlockInput($false)
 Stop-Computer -Force
